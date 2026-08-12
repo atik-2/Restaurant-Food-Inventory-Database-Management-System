@@ -17,7 +17,7 @@ import re, os, sqlite3, hashlib, html, threading, datetime, urllib.parse, http.c
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
-PORT = 8000
+PORT = int(os.environ.get('PORT', 8000))
 
 # ------------------------------------------------------------------ DB build
 def build_db():
