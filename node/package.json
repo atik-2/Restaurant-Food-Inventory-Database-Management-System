@@ -1,0 +1,14 @@
+{
+  "name": "restaurant-dbms",
+  "version": "1.0.0",
+  "description": "Restaurant & Food Inventory DBMS — Node.js + MySQL server with a web SQL runner",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "mysql2": "^3.11.0"
+  }
+}

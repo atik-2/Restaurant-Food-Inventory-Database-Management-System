@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Queries + Output | Restaurant DBMS</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <h1>SQL Queries with Output</h1>
+  <p>15 queries &mdash; every one tested on the sample data</p>
+</header>
+
+<nav>
+  <a href="index.html">Overview</a>
+  <a href="schema.html">Database Design</a>
+  <a href="sql.html">SQL Code</a>
+  <a href="queries.html" class="active">Queries + Output</a>
+  <a href="login.php">Live Panel &rarr;</a>
+</nav>
+
+<main>
+
+<div class="note">
+  Run these in phpMyAdmin &rarr; <strong>SQL</strong> tab after importing
+  <a href="database.sql">database.sql</a>. The output shown below is the real
+  result from the sample data.
+</div>
+
+<h2>A. Basic SELECT / INSERT / UPDATE / DELETE</h2>
+
+<div class="q">
+  <h3>Q1. Show all menu items</h3>
+  <p class="why">The simplest SELECT &mdash; <code>*</code> means all columns.</p>
+<pre><code>SELECT * FROM menu_items;</code></pre>
+  <p class="out-label">Output</p>
+  <table>
+    <tr><th>menu_id</th><th>name</th><th>category</th><th>price</th><th>discount</th><th>is_available</th></tr>
+    <tr><td>1</td><td>Chicken Biryani</td><td>Main</td><td>280.00</td><td>10.00</td><td>1</td></tr>
+    <tr><td>2</td><td>Beef Curry</td><td>Main</td><td>350.00</td><td>0.00</td><td>1</td></tr>
+    <tr><td>3</td><td>Plain Rice</td><td>Main</td><td>60.00</td><td>0.00</td><td>1</td></tr>
+    <tr><td>4</td><td>French Fries</td><td>Snacks</td><td>120.00</td><td>0.00</td><td>1</td></tr>
+    <tr><td>5</td><td>Cheese Burger</td><td>Snacks</td><td>250.00</td><td>20.00</td><td>1</td></tr>
+    <tr><td>6</td><td>Milk Tea</td><td>Drinks</td><td>40.00</td><td>0.00</td><td>1</td></tr>
+    <tr><td>7</td><td>Cold Coffee</td><td>Drinks</td><td>110.00</td><td>0.00</td><td>0</td></tr>
+  </table>
+</div>
+
+<div class="q">
+  <h3>Q1b. Discount baad diye asol price</h3>
+  <p class="why">Admin panel-e discount set kora hoy, customer panel-e ei query
+  diyei kom dam ta dekhano hoy. Calculated column &mdash; database-e alada kore
+  rakha hoy na, proti bar hisheb kore neya hoy.</p>
+<pre><code>SELECT name, price, discount,
+       ROUND(price - (price * discount / 100), 2) AS final_price
+FROM menu_items
+WHERE discount &gt; 0
+ORDER BY discount DESC;</code></pre>
+  <p class="out-label">Output</p>
+  <table>
+    <tr><th>name</th><th>price</th><th>discount</th><th>final_price</th></tr>
+    <tr><td>Cheese Burger</td><td>250.00</td><td>20.00</td><td>200.00</td></tr>
+    <tr><td>Chicken Biryani</td><td>280.00</td><td>10.00</td><td>252.00</td></tr>
+  </table>
+</div>
+
+<div class="q">
+  <h3>Q2. Available Main dishes, cheapest first</h3>
+  <p class="why"><code>WHERE</code> filters rows, <code>ORDER BY</code> sorts them.</p>
+<pre><code>SELECT name, price
+FROM menu_items
+WHERE category = 'Main' AND is_available = 1
+ORDER BY price ASC;</code></pre>
+  <p class="out-label">Output</p>
+  <table>
+    <tr><th>name</th><th>price</th></tr>
+    <tr><td>Plain Rice</td><td>60.00</td></tr>
+    <tr><td>Chicken Biryani</td><td>280.00</td></tr>
+    <tr><td>Beef Curry</td><td>350.00</td></tr>
+  </table>
+</div>
+
+<div class="q">
+  <h3>Q3. Add a new food item (INSERT)</h3>
+<pre><code>INSERT INTO menu_items (name, category, price, is_available)
+VALUES ('Vegetable Soup', 'Snacks', 90.00, 1);</code></pre>
+  <p class="out-label">Output</p>
+  <p><code>1 row inserted.</code> &mdash; new <code>menu_id</code> is created automatically by <code>AUTO_INCREMENT</code>.</p>
+</div>
+
+<div class="q">
+  <h3>Q4. Increase all drink prices by 10% (UPDATE)</h3>
+  <p class="why">Never forget <code>WHERE</code> in an UPDATE &mdash; otherwise every row changes.</p>
+<pre><code>UPDATE menu_items
+SET price = price * 1.10
+WHERE category = 'Drinks';</code></pre>
+  <p class="out-label">Output</p>
+  <table>
+    <tr><th>name</th><th>old price</th><th>new price</th></tr>
+    <tr><td>Milk Tea</td><td>40.00</td><td>44.00</td></tr>
+    <tr><td>Cold Coffee</td><td>110.00</td><td>121.00</td></tr>
+  </table>
+</div>
+
+<div class="q">
+  <h3>Q5. Remove unavailable items (DELETE)</h3>
+<pre><code>DELETE FROM menu_items
+WHERE is_available = 0;</code></pre>
+  <p class="out-label">Output</p>
+  <p><code>1 row deleted</code> (Cold Coffee). Its rows in <code>recipes</code> are also
+  removed automatically because of <code>ON DELETE CASCADE</code>.</p>
+</div>
+
+<h2>B. Joins (connecting tables)</h2>
+
+<div class="q">
+  <h3>Q6. INNER JOIN &mdash; each ingredient with its supplier</h3>
+  <p class="why">INNER JOIN shows only the rows that match in both tables.</p>
+<pre><code>SELECT i.name AS ingredient, i.quantity, i.unit, s.name AS supplier
+FROM ingredients i
+INNER JOIN suppliers s ON i.supplier_id = s.supplier_id;</code></pre>
+  <p class="out-label">Output</p>
+  <table>
+    <tr><th>ingredient</th><th>quantity</th><th>unit</th><th>supplier</th></tr>
+    <tr><td>Rice</td><td>50.00</td><td>kg</td><td>Fresh Farm Ltd</td></tr>
+    <tr><td>Chicken</td><td>12.00</td><td>kg</td><td>Meat House BD</td></tr>
+    <tr><td>Beef</td><td>8.00</td><td>kg</td><td>Meat House BD</td></tr>
+    <tr><td>Potato</td><td>30.00</td><td>kg</td><td>Fresh Farm Ltd</td></tr>
+    <tr><td>Onion</td><td>25.00</td><td>kg</td><td>Fresh Farm Ltd</td></tr>
+    <tr><td>Oil</td><td>18.00</td><td>litre</td><td>Spice Bazar</td></tr>
+    <tr><td>Milk</td><td>5.00</td><td>litre</td><td>Daily Dairy</td></tr>
+    <tr><td>Cheese</td><td>3.00</td><td>kg</td><td>Daily Dairy</td></tr>
+    <tr><td>Flour</td><td>22.00</td><td>kg</td><td>Fresh Farm Ltd</td></tr>
+    <tr><td>Spice Mix</td><td>4.00</td><td>kg</td><td>Spice Bazar</td></tr>
+  </table>
+</div>
+
+<div class="q">
+  <h3>Q7. LEFT JOIN &mdash; all customers, even without any order</h3>
+  <p class="why">LEFT JOIN keeps every row of the left table. A customer with no
+  order still appears, with count 0.</p>
+<pre><code>SELECT c.name, COUNT(o.order_id) AS total_orders
+FROM customers c
+LEFT JOIN orders o ON c.customer_id = o.customer_id
+GROUP BY c.customer_id, c.name;</code></pre>
+  <p class="out-label">Output</p>
+  <table>
+    <tr><th>name</th><th>total_orders</th></tr>
+    <tr><td>Rahim Uddin</td><td>2</td></tr>
+    <tr><td>Karim Ali</td><td>1</td></tr>
+    <tr><td>Nusrat Jahan</td><td>1</td></tr>
+    <tr><td>Sabbir Ahmed</td><td>1</td></tr>
+  </table>
+</div>
+
+<div class="q">
+  <h3>Q8. Bill of one order (4 tables joined)</h3>
+  <p class="why">This one query produces a complete customer bill.</p>
+<pre><code>SELECT o.order_id, c.name AS customer, m.name AS item,
+       oi.quantity, oi.price, (oi.quantity * oi.price) AS subtotal
+FROM orders o
+JOIN customers   c  ON o.customer_id = c.customer_id
+JOIN order_items oi ON o.order_id    = oi.order_id
+JOIN menu_items  m  ON oi.menu_id    = m.menu_id
+WHERE o.order_id = 1;</code></pre>
+  <p class="out-label">Output</p>
+  <table>
+    <tr><th>order_id</th><th>customer</th><th>item</th><th>quantity</th><th>price</th><th>subtotal</th></tr>
+    <tr><td>1</td><td>Rahim Uddin</td><td>Chicken Biryani</td><td>2</td><td>280.00</td><td>560.00</td></tr>
+    <tr><td>1</td><td>Rahim Uddin</td><td>Milk Tea</td><td>1</td><td>40.00</td><td>40.00</td></tr>
+  </table>
+  <p class="why">Total bill = 600.00</p>
+</div>
+
+<h2>C. Reports (GROUP BY, aggregate, subquery)</h2>
+
+<div class="q">
+  <h3>Q9. LOW STOCK ALERT &mdash; main feature</h3>
+  <p class="why">Which ingredients have reached the reorder level? Buy these today.</p>
+<pre><code>SELECT name, quantity, unit, reorder_level
+FROM ingredients
+WHERE quantity &lt;= reorder_level;</code></pre>
+  <p class="out-label">Output</p>
+  <table>
+    <tr><th>name</th><th>quantity</th><th>unit</th><th>reorder_level</th></tr>
+    <tr><td>Chicken</td><td>12.00</td><td>kg</td><td>15.00</td></tr>
+    <tr><td>Beef</td><td>8.00</td><td>kg</td><td>10.00</td></tr>
+    <tr><td>Milk</td><td>5.00</td><td>litre</td><td>10.00</td></tr>
+    <tr><td>Cheese</td><td>3.00</td><td>kg</td><td>4.00</td></tr>
+  </table>
+</div>
+
+<div class="q">
+  <h3>Q10. Daily sales report</h3>
+  <p class="why"><code>GROUP BY</code> makes one row per day; <code>SUM</code> and
+  <code>COUNT</code> are aggregate functions.</p>
+<pre><code>SELECT DATE(order_date) AS day,
+       COUNT(*) AS total_orders,
+       SUM(total_amount) AS total_sales
+FROM orders
+WHERE status = 'Paid'
+GROUP BY DATE(order_date)
+ORDER BY day;</code></pre>
+  <p class="out-label">Output</p>
+  <table>
+    <tr><th>day</th><th>total_orders</th><th>total_sales</th></tr>
+    <tr><td>2026-08-01</td><td>2</td><td>950.00</td></tr>
+    <tr><td>2026-08-02</td><td>2</td><td>1210.00</td></tr>
+  </table>
+</div>
+
+<div class="q">
+  <h3>Q11. Best selling food items</h3>
+<pre><code>SELECT m.name, SUM(oi.quantity) AS sold
+FROM order_items oi
+JOIN menu_items m ON oi.menu_id = m.menu_id
+GROUP BY m.menu_id, m.name
+ORDER BY sold DESC;</code></pre>
+  <p class="out-label">Output</p>
+  <table>
+    <tr><th>name</th><th>sold</th></tr>
+    <tr><td>Chicken Biryani</td><td>6</td></tr>
+    <tr><td>Beef Curry</td><td>1</td></tr>
+    <tr><td>French Fries</td><td>1</td></tr>
+    <tr><td>Cheese Burger</td><td>1</td></tr>
+    <tr><td>Milk Tea</td><td>1</td></tr>
+  </table>
+</div>
+
+<div class="q">
+  <h3>Q12. Purchase cost per supplier (GROUP BY + HAVING)</h3>
+  <p class="why"><code>WHERE</code> filters <em>rows</em>, <code>HAVING</code>
+  filters <em>groups</em> after grouping. Spice Bazar (4125.00) is removed here.</p>
+<pre><code>SELECT s.name, SUM(p.cost) AS total_cost
+FROM suppliers s
+JOIN purchases p ON s.supplier_id = p.supplier_id
+GROUP BY s.supplier_id, s.name
+HAVING SUM(p.cost) &gt; 5000
+ORDER BY total_cost DESC;</code></pre>
+  <p class="out-label">Output</p>
+  <table>
+    <tr><th>name</th><th>total_cost</th></tr>
+    <tr><td>Meat House BD</td><td>16850.00</td></tr>
+    <tr><td>Daily Dairy</td><td>10300.00</td></tr>
+    <tr><td>Fresh Farm Ltd</td><td>6450.00</td></tr>
+  </table>
+</div>
+
+<div class="q">
+  <h3>Q13. Items priced above the average (SUBQUERY)</h3>
+  <p class="why">The inner query runs first and gives one value (average price = 172.86),
+  then the outer query uses it.</p>
+<pre><code>SELECT name, price
+FROM menu_items
+WHERE price &gt; (SELECT AVG(price) FROM menu_items);</code></pre>
+  <p class="out-label">Output</p>
+  <table>
+    <tr><th>name</th><th>price</th></tr>
+    <tr><td>Chicken Biryani</td><td>280.00</td></tr>
+    <tr><td>Beef Curry</td><td>350.00</td></tr>
+    <tr><td>Cheese Burger</td><td>250.00</td></tr>
+  </table>
+</div>
+
+<div class="q">
+  <h3>Q14. Employee wise sales</h3>
+  <p class="why"><code>IFNULL</code> shows 0 instead of NULL for employees who
+  handled no order.</p>
+<pre><code>SELECT e.name, e.role, COUNT(o.order_id) AS orders_handled,
+       IFNULL(SUM(o.total_amount), 0) AS sales
+FROM employees e
+LEFT JOIN orders o ON e.employee_id = o.employee_id
+GROUP BY e.employee_id, e.name, e.role
+ORDER BY sales DESC;</code></pre>
+  <p class="out-label">Output</p>
+  <table>
+    <tr><th>name</th><th>role</th><th>orders_handled</th><th>sales</th></tr>
+    <tr><td>Sadik Khan</td><td>Waiter</td><td>2</td><td>1210.00</td></tr>
+    <tr><td>Rakibul Hasan</td><td>Waiter</td><td>3</td><td>950.00</td></tr>
+    <tr><td>Kawsar Arnob</td><td>Cashier</td><td>1</td><td>280.00</td></tr>
+    <tr><td>Nishat Islam</td><td>Manager</td><td>0</td><td>0.00</td></tr>
+    <tr><td>Amir Hamja</td><td>Chef</td><td>0</td><td>0.00</td></tr>
+  </table>
+  <p class="why">Rakibul handled 3 orders but one was <em>Cancelled</em> (0.00),
+  so his sales are lower than Sadik's.</p>
+</div>
+
+<div class="q">
+  <h3>Q15. Stock value in the store</h3>
+  <p class="why">A calculated column: quantity &times; unit price.</p>
+<pre><code>SELECT name, quantity, unit_price,
+       (quantity * unit_price) AS stock_value
+FROM ingredients
+ORDER BY stock_value DESC;</code></pre>
+  <p class="out-label">Output</p>
+  <table>
+    <tr><th>name</th><th>quantity</th><th>unit_price</th><th>stock_value</th></tr>
+    <tr><td>Beef</td><td>8.00</td><td>750.00</td><td>6000.00</td></tr>
+    <tr><td>Rice</td><td>50.00</td><td>75.00</td><td>3750.00</td></tr>
+    <tr><td>Chicken</td><td>12.00</td><td>280.00</td><td>3360.00</td></tr>
+    <tr><td>Oil</td><td>18.00</td><td>165.00</td><td>2970.00</td></tr>
+    <tr><td>Cheese</td><td>3.00</td><td>850.00</td><td>2550.00</td></tr>
+    <tr><td>Onion</td><td>25.00</td><td>60.00</td><td>1500.00</td></tr>
+    <tr><td>Spice Mix</td><td>4.00</td><td>320.00</td><td>1280.00</td></tr>
+    <tr><td>Flour</td><td>22.00</td><td>55.00</td><td>1210.00</td></tr>
+    <tr><td>Potato</td><td>30.00</td><td>40.00</td><td>1200.00</td></tr>
+    <tr><td>Milk</td><td>5.00</td><td>90.00</td><td>450.00</td></tr>
+  </table>
+  <p class="why">Total stock value = 24,270.00 BDT</p>
+</div>
+
+<h2>Quick revision table</h2>
+<div class="card">
+  <table>
+    <tr><th>Keyword</th><th>What it does</th></tr>
+    <tr><td><code>SELECT</code></td><td>Read data</td></tr>
+    <tr><td><code>WHERE</code></td><td>Filter rows</td></tr>
+    <tr><td><code>ORDER BY</code></td><td>Sort (ASC / DESC)</td></tr>
+    <tr><td><code>INNER JOIN</code></td><td>Only matching rows of both tables</td></tr>
+    <tr><td><code>LEFT JOIN</code></td><td>All rows of the left table + matches</td></tr>
+    <tr><td><code>GROUP BY</code></td><td>Make groups (one row per group)</td></tr>
+    <tr><td><code>HAVING</code></td><td>Filter the groups</td></tr>
+    <tr><td><code>COUNT / SUM / AVG</code></td><td>Aggregate functions</td></tr>
+    <tr><td>Subquery</td><td>A query inside another query</td></tr>
+    <tr><td><code>VIEW</code></td><td>Saved query, used like a table</td></tr>
+    <tr><td><code>TRIGGER</code></td><td>Runs automatically after INSERT / UPDATE / DELETE</td></tr>
+  </table>
+</div>
+
+</main>
+
+<footer>Restaurant &amp; Food Inventory DBMS &mdash; Project Presentation Website</footer>
+
+</body>
+</html>

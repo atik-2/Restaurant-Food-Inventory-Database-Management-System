@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SQL Code | Restaurant DBMS</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <h1>SQL Code</h1>
+  <p>CREATE &nbsp;&bull;&nbsp; INSERT &nbsp;&bull;&nbsp; VIEW &nbsp;&bull;&nbsp; TRIGGER</p>
+</header>
+
+<nav>
+  <a href="index.html">Overview</a>
+  <a href="schema.html">Database Design</a>
+  <a href="sql.html" class="active">SQL Code</a>
+  <a href="queries.html">Queries + Output</a>
+  <a href="login.php">Live Panel &rarr;</a>
+</nav>
+
+<main>
+
+<div class="note">
+  <strong>How to run:</strong> Start XAMPP &rarr; open <code>localhost/phpmyadmin</code>
+  &rarr; <strong>Import</strong> tab &rarr; choose <a href="database.sql">database.sql</a>
+  &rarr; <strong>Go</strong>. The whole database is created with sample data.
+</div>
+
+<h2>Step 1 &mdash; Create the Database</h2>
+<pre><code>DROP DATABASE IF EXISTS restaurant_db;
+CREATE DATABASE restaurant_db;
+USE restaurant_db;</code></pre>
+
+<h2>Step 2 &mdash; Create Tables</h2>
+
+<h3>Stock side</h3>
+<pre><code>CREATE TABLE suppliers (
+    supplier_id INT AUTO_INCREMENT PRIMARY KEY,
+    name        VARCHAR(100) NOT NULL,
+    phone       VARCHAR(20)  NOT NULL UNIQUE,
+    email       VARCHAR(100) UNIQUE,
+    address     VARCHAR(150)
+);
+
+CREATE TABLE ingredients (
+    ingredient_id INT AUTO_INCREMENT PRIMARY KEY,
+    name          VARCHAR(100) NOT NULL UNIQUE,
+    unit          VARCHAR(10)  NOT NULL,             -- kg, litre, pcs
+    quantity      DECIMAL(10,2) NOT NULL DEFAULT 0,
+    reorder_level DECIMAL(10,2) NOT NULL DEFAULT 5,  -- alert line
+    unit_price    DECIMAL(10,2) NOT NULL,
+    supplier_id   INT,
+    CHECK (quantity >= 0),
+    CHECK (unit_price >= 0),
+    FOREIGN KEY (supplier_id) REFERENCES suppliers(supplier_id)
+        ON DELETE SET NULL
+);
+
+CREATE TABLE purchases (
+    purchase_id   INT AUTO_INCREMENT PRIMARY KEY,
+    supplier_id   INT NOT NULL,
+    ingredient_id INT NOT NULL,
+    quantity      DECIMAL(10,2) NOT NULL,
+    cost          DECIMAL(10,2) NOT NULL,
+    purchase_date DATE NOT NULL,
+    CHECK (quantity > 0),
+    FOREIGN KEY (supplier_id)   REFERENCES suppliers(supplier_id),
+    FOREIGN KEY (ingredient_id) REFERENCES ingredients(ingredient_id)
+);</code></pre>
+
+<h3>Menu side</h3>
+<pre><code>CREATE TABLE menu_items (
+    menu_id      INT AUTO_INCREMENT PRIMARY KEY,
+    name         VARCHAR(100) NOT NULL UNIQUE,
+    category     VARCHAR(30)  NOT NULL,
+    price        DECIMAL(10,2) NOT NULL,
+    discount     DECIMAL(5,2)  NOT NULL DEFAULT 0,   -- discount in %
+    is_available TINYINT(1)   NOT NULL DEFAULT 1,
+    CHECK (price > 0),
+    CHECK (discount >= 0 AND discount <= 100)
+);
+
+-- which ingredient is needed for which food (M:N bridge table)
+CREATE TABLE recipes (
+    menu_id       INT NOT NULL,
+    ingredient_id INT NOT NULL,
+    qty_required  DECIMAL(10,2) NOT NULL,
+    PRIMARY KEY (menu_id, ingredient_id),            -- composite PK
+    FOREIGN KEY (menu_id)       REFERENCES menu_items(menu_id)
+        ON DELETE CASCADE,
+    FOREIGN KEY (ingredient_id) REFERENCES ingredients(ingredient_id)
+);</code></pre>
+
+<h3>Sales side</h3>
+<pre><code>CREATE TABLE customers (
+    customer_id INT AUTO_INCREMENT PRIMARY KEY,
+    name        VARCHAR(100) NOT NULL,
+    phone       VARCHAR(20)  NOT NULL UNIQUE
+);
+
+CREATE TABLE employees (
+    employee_id INT AUTO_INCREMENT PRIMARY KEY,
+    name        VARCHAR(100) NOT NULL,
+    role        VARCHAR(30)  NOT NULL,
+    phone       VARCHAR(20)  NOT NULL UNIQUE,
+    salary      DECIMAL(10,2) NOT NULL,
+    hire_date   DATE NOT NULL
+);
+
+CREATE TABLE orders (
+    order_id     INT AUTO_INCREMENT PRIMARY KEY,
+    customer_id  INT,                                -- NULL = walk-in customer
+    employee_id  INT NOT NULL,
+    order_date   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    status       VARCHAR(20) NOT NULL DEFAULT 'Pending',
+    total_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+    CHECK (status IN ('Pending','Served','Paid','Cancelled')),
+    FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
+        ON DELETE SET NULL,
+    FOREIGN KEY (employee_id) REFERENCES employees(employee_id)
+);
+
+CREATE TABLE order_items (
+    order_item_id INT AUTO_INCREMENT PRIMARY KEY,
+    order_id      INT NOT NULL,
+    menu_id       INT NOT NULL,
+    quantity      INT NOT NULL,
+    price         DECIMAL(10,2) NOT NULL,            -- price at selling time
+    CHECK (quantity > 0),
+    FOREIGN KEY (order_id) REFERENCES orders(order_id)
+        ON DELETE CASCADE,
+    FOREIGN KEY (menu_id)  REFERENCES menu_items(menu_id)
+);</code></pre>
+
+<h3>Login table</h3>
+<p class="why">Admin panel ar customer panel &mdash; duitar jonno ek table.
+<code>role</code> column-i thik kore ke kothay jabe.</p>
+<pre><code>CREATE TABLE users (
+    user_id     INT AUTO_INCREMENT PRIMARY KEY,
+    username    VARCHAR(50)  NOT NULL UNIQUE,
+    password    VARCHAR(255) NOT NULL,
+    role        VARCHAR(10)  NOT NULL DEFAULT 'customer',
+    customer_id INT NULL,                     -- admin hole NULL
+    CHECK (role IN ('admin', 'customer')),
+    FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
+        ON DELETE CASCADE
+);
+
+-- password kokhono plain text-e rakha jay na
+INSERT INTO users (username, password, role, customer_id) VALUES
+('admin', SHA2('admin123', 256), 'admin', NULL),
+('rahim', SHA2('rahim123', 256), 'customer', 1);
+
+-- login check kora hoy erokom
+SELECT user_id, role, customer_id FROM users
+WHERE username = 'admin' AND password = SHA2('admin123', 256);</code></pre>
+
+<h2>Step 3 &mdash; Insert Sample Data</h2>
+<p class="why">Full data is in <a href="database.sql">database.sql</a>. A short sample:</p>
+<pre><code>INSERT INTO suppliers (name, phone, email, address) VALUES
+('Fresh Farm Ltd', '01711000001', 'fresh@farm.com', 'Savar, Dhaka'),
+('Meat House BD',  '01711000002', 'sales@meat.com', 'Mirpur, Dhaka');
+
+INSERT INTO ingredients (name, unit, quantity, reorder_level, unit_price, supplier_id) VALUES
+('Rice',    'kg', 50.00, 20.00,  75.00, 1),
+('Chicken', 'kg', 12.00, 15.00, 280.00, 2);
+
+INSERT INTO menu_items (name, category, price, discount, is_available) VALUES
+('Chicken Biryani', 'Main', 280.00, 10.00, 1);   -- 10% off
+
+-- 1 plate Biryani needs: 0.25kg rice + 0.30kg chicken
+INSERT INTO recipes (menu_id, ingredient_id, qty_required) VALUES
+(1, 1, 0.25), (1, 2, 0.30);</code></pre>
+
+<h2>Step 4 &mdash; Views (saved reports)</h2>
+<pre><code>CREATE VIEW v_low_stock AS
+SELECT i.name, i.quantity, i.unit, i.reorder_level, s.name AS supplier
+FROM ingredients i
+LEFT JOIN suppliers s ON i.supplier_id = s.supplier_id
+WHERE i.quantity &lt;= i.reorder_level;
+
+CREATE VIEW v_daily_sales AS
+SELECT DATE(order_date) AS day,
+       COUNT(*) AS total_orders,
+       SUM(total_amount) AS total_sales
+FROM orders
+WHERE status = 'Paid'
+GROUP BY DATE(order_date);
+
+-- use a view exactly like a table:
+SELECT * FROM v_low_stock;</code></pre>
+<div class="note">A <strong>view</strong> is a saved SELECT query. The manager
+does not have to write a long JOIN again and again.</div>
+
+<h2>Step 5 &mdash; Triggers (Automatic Stock Update)</h2>
+<p class="why">This is the main feature of the project: buy something &rarr; stock
+increases; sell something &rarr; stock decreases. All automatic.</p>
+<pre><code>DELIMITER $$
+
+-- 1) New purchase  ->  stock INCREASES
+CREATE TRIGGER trg_purchase_add_stock
+AFTER INSERT ON purchases
+FOR EACH ROW
+BEGIN
+    UPDATE ingredients
+    SET quantity = quantity + NEW.quantity
+    WHERE ingredient_id = NEW.ingredient_id;
+END$$
+
+-- 2) New order item -> ingredients DEDUCTED + bill total updated
+CREATE TRIGGER trg_order_deduct_stock
+AFTER INSERT ON order_items
+FOR EACH ROW
+BEGIN
+    UPDATE ingredients i
+    JOIN recipes r ON r.ingredient_id = i.ingredient_id
+    SET i.quantity = i.quantity - (r.qty_required * NEW.quantity)
+    WHERE r.menu_id = NEW.menu_id;
+
+    UPDATE orders
+    SET total_amount = total_amount + (NEW.price * NEW.quantity)
+    WHERE order_id = NEW.order_id;
+END$$
+
+DELIMITER ;</code></pre>
+
+<h3>Trigger demo (good for viva)</h3>
+<pre><code>-- BEFORE
+SELECT name, quantity FROM ingredients WHERE ingredient_id IN (1,2,6,10);
+
+-- A customer orders 1 Chicken Biryani
+INSERT INTO orders (customer_id, employee_id, status) VALUES (2, 3, 'Pending');
+INSERT INTO order_items (order_id, menu_id, quantity, price)
+VALUES (LAST_INSERT_ID(), 1, 1, 280.00);
+
+-- AFTER  ->  rice -0.25, chicken -0.30, oil -0.05, spice -0.02
+SELECT name, quantity FROM ingredients WHERE ingredient_id IN (1,2,6,10);
+SELECT * FROM orders ORDER BY order_id DESC LIMIT 1;   -- total_amount = 280</code></pre>
+
+<div class="note">
+  <strong>Why <code>DELIMITER $$</code>?</strong> A trigger body contains
+  semicolons inside <code>BEGIN ... END</code>. We temporarily change the
+  statement terminator to <code>$$</code> so MySQL does not stop at the first
+  semicolon, then change it back to <code>;</code>.
+</div>
+
+<h2>Full script</h2>
+<div class="card">
+  <p>Everything above (plus all sample data and all 15 queries) is in one file:
+  <a href="database.sql"><strong>database.sql</strong></a></p>
+</div>
+
+</main>
+
+<footer>Restaurant &amp; Food Inventory DBMS &mdash; Project Presentation Website</footer>
+
+</body>
+</html>

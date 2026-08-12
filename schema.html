@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Database Design | Restaurant DBMS</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <h1>Database Design</h1>
+  <p>Tables, keys, relationships and normalization</p>
+</header>
+
+<nav>
+  <a href="index.html">Overview</a>
+  <a href="schema.html" class="active">Database Design</a>
+  <a href="sql.html">SQL Code</a>
+  <a href="queries.html">Queries + Output</a>
+  <a href="login.php">Live Panel &rarr;</a>
+</nav>
+
+<main>
+
+<h2>Remember it in 3 Groups</h2>
+<div class="card">
+  <p>There are <strong>10 tables</strong>. Easy way to remember &mdash;
+  three groups + ekta login table:</p>
+  <table>
+    <tr><th>Group</th><th>Tables</th><th>Meaning</th></tr>
+    <tr>
+      <td><strong>Stock side</strong></td>
+      <td><code>suppliers</code>, <code>ingredients</code>, <code>purchases</code></td>
+      <td>Maal kothay theke ashe, koto ache</td>
+    </tr>
+    <tr>
+      <td><strong>Menu side</strong></td>
+      <td><code>menu_items</code>, <code>recipes</code></td>
+      <td>Ki khabar bikri hoy, tate ki ki lage</td>
+    </tr>
+    <tr>
+      <td><strong>Sales side</strong></td>
+      <td><code>customers</code>, <code>employees</code>, <code>orders</code>, <code>order_items</code></td>
+      <td>Ke order korlo, ke handle korlo, ki bikri holo</td>
+    </tr>
+    <tr>
+      <td><strong>Login</strong></td>
+      <td><code>users</code></td>
+      <td>Ke admin, ke customer &mdash; panel-e login korar jonno</td>
+    </tr>
+  </table>
+  <div class="note"><strong>recipes</strong> is the bridge table: it connects the
+  Menu side with the Stock side. Because of this table, selling one food item can
+  automatically reduce the correct ingredients.</div>
+</div>
+
+<h2>Table Structure</h2>
+
+<div class="grid">
+
+  <div class="card">
+    <h3>suppliers</h3>
+    <table>
+      <tr><th>Column</th><th>Type</th><th>Key</th></tr>
+      <tr><td>supplier_id</td><td>INT</td><td><span class="tag pk">PK</span></td></tr>
+      <tr><td>name</td><td>VARCHAR(100)</td><td>NOT NULL</td></tr>
+      <tr><td>phone</td><td>VARCHAR(20)</td><td>UNIQUE</td></tr>
+      <tr><td>email</td><td>VARCHAR(100)</td><td>UNIQUE</td></tr>
+      <tr><td>address</td><td>VARCHAR(150)</td><td>&mdash;</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>ingredients <span class="tag">stock</span></h3>
+    <table>
+      <tr><th>Column</th><th>Type</th><th>Key</th></tr>
+      <tr><td>ingredient_id</td><td>INT</td><td><span class="tag pk">PK</span></td></tr>
+      <tr><td>name</td><td>VARCHAR(100)</td><td>UNIQUE</td></tr>
+      <tr><td>unit</td><td>VARCHAR(10)</td><td>kg / litre / pcs</td></tr>
+      <tr><td>quantity</td><td>DECIMAL(10,2)</td><td>CHECK &ge; 0</td></tr>
+      <tr><td>reorder_level</td><td>DECIMAL(10,2)</td><td>alert line</td></tr>
+      <tr><td>unit_price</td><td>DECIMAL(10,2)</td><td>NOT NULL</td></tr>
+      <tr><td>supplier_id</td><td>INT</td><td><span class="tag fk">FK</span></td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>purchases</h3>
+    <table>
+      <tr><th>Column</th><th>Type</th><th>Key</th></tr>
+      <tr><td>purchase_id</td><td>INT</td><td><span class="tag pk">PK</span></td></tr>
+      <tr><td>supplier_id</td><td>INT</td><td><span class="tag fk">FK</span></td></tr>
+      <tr><td>ingredient_id</td><td>INT</td><td><span class="tag fk">FK</span></td></tr>
+      <tr><td>quantity</td><td>DECIMAL(10,2)</td><td>CHECK &gt; 0</td></tr>
+      <tr><td>cost</td><td>DECIMAL(10,2)</td><td>NOT NULL</td></tr>
+      <tr><td>purchase_date</td><td>DATE</td><td>NOT NULL</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>menu_items</h3>
+    <table>
+      <tr><th>Column</th><th>Type</th><th>Key</th></tr>
+      <tr><td>menu_id</td><td>INT</td><td><span class="tag pk">PK</span></td></tr>
+      <tr><td>name</td><td>VARCHAR(100)</td><td>UNIQUE</td></tr>
+      <tr><td>category</td><td>VARCHAR(30)</td><td>Main/Snacks/Drinks</td></tr>
+      <tr><td>price</td><td>DECIMAL(10,2)</td><td>CHECK &gt; 0</td></tr>
+      <tr><td>discount</td><td>DECIMAL(5,2)</td><td>% off, CHECK 0-100</td></tr>
+      <tr><td>is_available</td><td>TINYINT(1)</td><td>1 = yes</td></tr>
+    </table>
+    <p class="why">Customer je dam dey =
+    <code>price - (price &times; discount / 100)</code></p>
+  </div>
+
+  <div class="card">
+    <h3>recipes <span class="tag">bridge</span></h3>
+    <table>
+      <tr><th>Column</th><th>Type</th><th>Key</th></tr>
+      <tr><td>menu_id</td><td>INT</td><td><span class="tag pk">PK</span> <span class="tag fk">FK</span></td></tr>
+      <tr><td>ingredient_id</td><td>INT</td><td><span class="tag pk">PK</span> <span class="tag fk">FK</span></td></tr>
+      <tr><td>qty_required</td><td>DECIMAL(10,2)</td><td>per 1 plate</td></tr>
+    </table>
+    <p class="why">Composite primary key = (menu_id, ingredient_id)</p>
+  </div>
+
+  <div class="card">
+    <h3>customers</h3>
+    <table>
+      <tr><th>Column</th><th>Type</th><th>Key</th></tr>
+      <tr><td>customer_id</td><td>INT</td><td><span class="tag pk">PK</span></td></tr>
+      <tr><td>name</td><td>VARCHAR(100)</td><td>NOT NULL</td></tr>
+      <tr><td>phone</td><td>VARCHAR(20)</td><td>UNIQUE</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>employees</h3>
+    <table>
+      <tr><th>Column</th><th>Type</th><th>Key</th></tr>
+      <tr><td>employee_id</td><td>INT</td><td><span class="tag pk">PK</span></td></tr>
+      <tr><td>name</td><td>VARCHAR(100)</td><td>NOT NULL</td></tr>
+      <tr><td>role</td><td>VARCHAR(30)</td><td>Chef/Waiter/Manager</td></tr>
+      <tr><td>phone</td><td>VARCHAR(20)</td><td>UNIQUE</td></tr>
+      <tr><td>salary</td><td>DECIMAL(10,2)</td><td>NOT NULL</td></tr>
+      <tr><td>hire_date</td><td>DATE</td><td>NOT NULL</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>orders</h3>
+    <table>
+      <tr><th>Column</th><th>Type</th><th>Key</th></tr>
+      <tr><td>order_id</td><td>INT</td><td><span class="tag pk">PK</span></td></tr>
+      <tr><td>customer_id</td><td>INT</td><td><span class="tag fk">FK</span> (NULL = walk-in)</td></tr>
+      <tr><td>employee_id</td><td>INT</td><td><span class="tag fk">FK</span></td></tr>
+      <tr><td>order_date</td><td>DATETIME</td><td>default NOW()</td></tr>
+      <tr><td>status</td><td>VARCHAR(20)</td><td>CHECK (4 values)</td></tr>
+      <tr><td>total_amount</td><td>DECIMAL(10,2)</td><td>bill</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>order_items</h3>
+    <table>
+      <tr><th>Column</th><th>Type</th><th>Key</th></tr>
+      <tr><td>order_item_id</td><td>INT</td><td><span class="tag pk">PK</span></td></tr>
+      <tr><td>order_id</td><td>INT</td><td><span class="tag fk">FK</span></td></tr>
+      <tr><td>menu_id</td><td>INT</td><td><span class="tag fk">FK</span></td></tr>
+      <tr><td>quantity</td><td>INT</td><td>CHECK &gt; 0</td></tr>
+      <tr><td>price</td><td>DECIMAL(10,2)</td><td>discount kata dam</td></tr>
+    </table>
+    <p class="why">Dam ekhane copy kore rakha hoy, karon pore admin menu-r price
+    change korleo purano bill same thakte hobe.</p>
+  </div>
+
+  <div class="card">
+    <h3>users <span class="tag">login</span></h3>
+    <table>
+      <tr><th>Column</th><th>Type</th><th>Key</th></tr>
+      <tr><td>user_id</td><td>INT</td><td><span class="tag pk">PK</span></td></tr>
+      <tr><td>username</td><td>VARCHAR(50)</td><td>UNIQUE</td></tr>
+      <tr><td>password</td><td>VARCHAR(255)</td><td>SHA2 hash</td></tr>
+      <tr><td>role</td><td>VARCHAR(10)</td><td>CHECK admin/customer</td></tr>
+      <tr><td>customer_id</td><td>INT</td><td><span class="tag fk">FK</span> (customer hole)</td></tr>
+    </table>
+    <p class="why">Admin-er <code>customer_id</code> NULL thake. Ei role column
+    dekhei thik hoy ke kon panel-e jabe.</p>
+  </div>
+
+</div>
+
+<h2>ER Diagram (Relationships)</h2>
+<div class="card">
+  <pre><code>   suppliers ──1───N── purchases ──N───1── ingredients
+                                              │ 1
+                                              │
+                                              │ N
+   customers ──1───N── orders               recipes
+       │ 1                │ 1                 │ N
+       │                  │                   │
+       │ N                │ N                 │ 1
+     users           order_items ──N───1── menu_items
+
+   employees ──1───N── orders</code></pre>
+
+  <table>
+    <tr><th>Relationship</th><th>Type</th><th>Meaning</th></tr>
+    <tr><td>Customer &rarr; Order</td><td>1 : N</td><td>One customer can place many orders</td></tr>
+    <tr><td>Employee &rarr; Order</td><td>1 : N</td><td>One employee handles many orders</td></tr>
+    <tr><td>Order &rarr; Order Items</td><td>1 : N</td><td>One order contains many food items</td></tr>
+    <tr><td>Menu Item &rarr; Order Items</td><td>1 : N</td><td>One food item appears in many orders</td></tr>
+    <tr><td>Menu Item &harr; Ingredient</td><td>M : N</td><td>Solved by <code>recipes</code> table</td></tr>
+    <tr><td>Supplier &rarr; Purchase</td><td>1 : N</td><td>One supplier supplies many times</td></tr>
+    <tr><td>Ingredient &rarr; Purchase</td><td>1 : N</td><td>One ingredient is bought many times</td></tr>
+    <tr><td>Customer &rarr; User</td><td>1 : 1</td><td>Ek customer-er ekta login account</td></tr>
+  </table>
+</div>
+
+<h2>Normalization</h2>
+<div class="card">
+  <table>
+    <tr><th>Form</th><th>Rule</th><th>How we did it</th></tr>
+    <tr>
+      <td><strong>1NF</strong></td>
+      <td>No repeating groups; every cell holds one value</td>
+      <td>An order's food items are not stored in one column &mdash;
+          each item is a separate row in <code>order_items</code></td>
+    </tr>
+    <tr>
+      <td><strong>2NF</strong></td>
+      <td>Every non-key attribute depends on the <em>whole</em> primary key</td>
+      <td>In <code>recipes</code> (PK = menu_id + ingredient_id),
+          <code>qty_required</code> depends on both columns together</td>
+    </tr>
+    <tr>
+      <td><strong>3NF</strong></td>
+      <td>No transitive dependency (non-key &rarr; non-key)</td>
+      <td>Supplier name is not kept in <code>ingredients</code>;
+          only <code>supplier_id</code> is stored and the name comes from the
+          <code>suppliers</code> table</td>
+    </tr>
+  </table>
+  <div class="note">Benefit: no duplicate data, less storage, and no update
+  anomaly &mdash; a supplier's phone number is changed in <strong>one</strong> place only.</div>
+</div>
+
+<h2>DBMS Concepts Used</h2>
+<div class="grid">
+  <div class="card"><h3>1. Primary Key</h3><p>Unique identification of each row &mdash; e.g. <code>order_id</code>.</p></div>
+  <div class="card"><h3>2. Foreign Key</h3><p>Connects two tables and keeps data valid &mdash; e.g. <code>orders.customer_id</code>.</p></div>
+  <div class="card"><h3>3. Constraints</h3><p><code>NOT NULL</code>, <code>UNIQUE</code>, <code>CHECK</code>, <code>DEFAULT</code>.</p></div>
+  <div class="card"><h3>4. SQL Operations</h3><p><code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code>, <code>SELECT</code>.</p></div>
+  <div class="card"><h3>5. Joins</h3><p><code>INNER JOIN</code> and <code>LEFT JOIN</code> to combine tables.</p></div>
+  <div class="card"><h3>6. Views &amp; Triggers</h3><p>Views = saved reports. Triggers = automatic stock update.</p></div>
+</div>
+
+</main>
+
+<footer>Restaurant &amp; Food Inventory DBMS &mdash; Project Presentation Website</footer>
+
+</body>
+</html>

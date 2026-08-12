@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+node/node_modules/
+
+# Python cache & logs
+__pycache__/
+*.pyc
+*.log
+node/server.log
+
+# IDE & system temp files
+.claude/
+.food and resturant/
+.report-build/
+.vscode/
+.DS_Store
+Thumbs.db

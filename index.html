@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Restaurant &amp; Food Inventory DBMS</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <h1>Restaurant &amp; Food Inventory Database Management System</h1>
+  <p>Database Management System &mdash; Project Presentation</p>
+</header>
+
+<nav>
+  <a href="index.html" class="active">Overview</a>
+  <a href="schema.html">Database Design</a>
+  <a href="sql.html">SQL Code</a>
+  <a href="queries.html">Queries + Output</a>
+  <a href="login.php">Live Panel &rarr;</a>
+</nav>
+
+<main>
+
+<h2>1. Introduction</h2>
+<div class="card">
+  <p>A <strong>Restaurant &amp; Food Inventory Management System</strong> is a
+  database-driven application that stores and manages everything a restaurant
+  needs in one place:</p>
+  <div class="grid">
+    <ul class="clean">
+      <li>Food ingredients</li>
+      <li>Inventory stock</li>
+      <li>Suppliers</li>
+      <li>Purchase records</li>
+    </ul>
+    <ul class="clean">
+      <li>Menu items</li>
+      <li>Customer orders</li>
+      <li>Sales records</li>
+      <li>Employees</li>
+    </ul>
+  </div>
+  <p>Instead of keeping records on paper, everything is stored in a
+  <strong>centralized database</strong>, so restaurant operations become faster,
+  more accurate and more efficient.</p>
+</div>
+
+<h2>2. Problems with Traditional (Manual) Management</h2>
+<div class="card">
+  <div class="grid">
+    <ul class="clean">
+      <li>Manual record keeping</li>
+      <li>Lost inventory records</li>
+      <li>Food wastage</li>
+      <li>Stock shortages</li>
+    </ul>
+    <ul class="clean">
+      <li>Duplicate data</li>
+      <li>Slow report generation</li>
+      <li>Human errors</li>
+      <li>Difficulty tracking suppliers</li>
+    </ul>
+  </div>
+  <div class="note">Without a proper database, restaurants cannot track
+  inventory and sales properly &mdash; this causes extra cost and poor customer service.</div>
+</div>
+
+<h2>3. Objectives</h2>
+<div class="grid">
+  <div class="card">
+    <h3>Primary</h3>
+    <ul class="clean">
+      <li>Build a centralized restaurant database</li>
+      <li>Reduce food waste</li>
+      <li>Improve inventory accuracy</li>
+      <li>Manage suppliers efficiently</li>
+      <li>Track customer orders</li>
+      <li>Generate reports quickly</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Secondary</h3>
+    <ul class="clean">
+      <li>Improve decision making</li>
+      <li>Save employee time</li>
+      <li>Reduce operational cost</li>
+      <li>Increase restaurant productivity</li>
+    </ul>
+  </div>
+</div>
+
+<h2>4. Features (4 Modules)</h2>
+<div class="grid">
+  <div class="card">
+    <h3>Inventory Module</h3>
+    <ul class="clean"><li>Add stock</li><li>Update stock</li><li>Remove expired stock</li></ul>
+  </div>
+  <div class="card">
+    <h3>Order Module</h3>
+    <ul class="clean"><li>Customer orders</li><li>Order history</li><li>Bill generation</li></ul>
+  </div>
+  <div class="card">
+    <h3>Supplier &amp; Employee</h3>
+    <ul class="clean"><li>Supplier information</li><li>Purchase history</li><li>Employee records &amp; roles</li></ul>
+  </div>
+  <div class="card">
+    <h3>Reports</h3>
+    <ul class="clean"><li>Daily sales</li><li>Monthly sales</li><li>Inventory status</li><li>Low stock alert</li></ul>
+  </div>
+</div>
+
+<h2>5. How the System Works</h2>
+<div class="card">
+  <table>
+    <tr><th>Step</th><th>What happens</th><th>Database action</th></tr>
+    <tr><td>1</td><td>Customer places an order</td><td><code>INSERT INTO orders</code></td></tr>
+    <tr><td>2</td><td>Order items are stored</td><td><code>INSERT INTO order_items</code></td></tr>
+    <tr><td>3</td><td>Ingredients deducted automatically</td><td><strong>TRIGGER</strong> &rarr; <code>UPDATE ingredients</code></td></tr>
+    <tr><td>4</td><td>Inventory is updated</td><td>stock quantity goes down</td></tr>
+    <tr><td>5</td><td>Manager views reports</td><td><code>SELECT</code> with <code>JOIN</code> / <code>GROUP BY</code></td></tr>
+  </table>
+  <div class="note">Every customer order automatically updates the inventory.
+  The manager always knows the current stock level without checking manually.</div>
+</div>
+
+<h2>6. Live Panels (Admin + Customer)</h2>
+<div class="card">
+  <p>Documentation-er sathe ekta <strong>cholte thaka PHP application</strong>-o
+  ache. Duita panel, ekta login page theke bhag hoye jay &mdash; role dekhe
+  database nijei thik kore dey ke kothay jabe.</p>
+
+  <table>
+    <tr><th>Panel</th><th>Ki kora jay</th><th>Main SQL</th></tr>
+    <tr>
+      <td rowspan="4"><strong>Admin</strong></td>
+      <td>Food add kora, price ar <strong>discount</strong> set kora, item off kora</td>
+      <td>INSERT / UPDATE on <code>menu_items</code></td>
+    </tr>
+    <tr>
+      <td>Ingredient stock dekha, low stock alert</td>
+      <td><code>v_low_stock</code> VIEW</td>
+    </tr>
+    <tr>
+      <td>Supplier theke purchase entry</td>
+      <td>INSERT on <code>purchases</code> &rarr; TRIGGER stock baray</td>
+    </tr>
+    <tr>
+      <td>Order dekha, status change, sales report</td>
+      <td>JOIN + GROUP BY + HAVING</td>
+    </tr>
+    <tr>
+      <td rowspan="3"><strong>Customer</strong></td>
+      <td>Menu dekha &mdash; discount kata dam soho</td>
+      <td><code>price - (price*discount/100)</code></td>
+    </tr>
+    <tr>
+      <td>Cart-e add kora, order place kora</td>
+      <td>TRANSACTION + INSERT &rarr; TRIGGER stock kamay</td>
+    </tr>
+    <tr>
+      <td>Nijer order history, cancel kora</td>
+      <td>SELECT / UPDATE with <code>customer_id</code> check</td>
+    </tr>
+  </table>
+
+  <p class="note"><strong>Login:</strong>
+  admin &rarr; <code>admin / admin123</code> &nbsp;&middot;&nbsp;
+  customer &rarr; <code>rahim / 1234</code></p>
+
+  <p>Password gulo database-e plain text-e nei &mdash; <code>SHA2()</code> diye
+  hash kora ache, PHP-te <code>hash('sha256', ...)</code> diye milano hoy.
+  Sob query <strong>prepared statement</strong> diye chalano, tai SQL injection
+  hobe na.</p>
+
+  <p><a href="login.php"><strong>Panel kholo &rarr;</strong></a>
+  <span class="muted">(XAMPP-e <code>htdocs</code>-e rekhe
+  <code>localhost/work/login.php</code> &mdash; PHP chara chole na)</span></p>
+</div>
+
+<h2>7. Advantages</h2>
+<div class="card">
+  <div class="grid">
+    <ul class="clean">
+      <li>Faster inventory management</li>
+      <li>Accurate stock records</li>
+      <li>Reduced food waste</li>
+      <li>Better supplier management</li>
+    </ul>
+    <ul class="clean">
+      <li>Improved customer service</li>
+      <li>Easy report generation</li>
+      <li>Secure data storage</li>
+      <li>Better business decisions</li>
+    </ul>
+  </div>
+</div>
+
+<h2>8. Technology Stack</h2>
+<div class="card">
+  <table>
+    <tr><th>Layer</th><th>Technology</th></tr>
+    <tr><td>Frontend</td><td>HTML, CSS, JavaScript</td></tr>
+    <tr><td>Backend</td><td>PHP / Node.js</td></tr>
+    <tr><td><strong>Database</strong></td><td><strong>MySQL</strong></td></tr>
+    <tr><td>Tools</td><td>XAMPP, phpMyAdmin, Visual Studio Code</td></tr>
+  </table>
+</div>
+
+<h2>9. Future Improvements</h2>
+<div class="card">
+  <div class="grid">
+    <ul class="clean">
+      <li>Online food ordering</li>
+      <li>QR code menu</li>
+      <li>Mobile application</li>
+      <li>AI demand prediction</li>
+    </ul>
+    <ul class="clean">
+      <li>Barcode scanner</li>
+      <li>SMS stock alerts</li>
+      <li>Cloud database</li>
+      <li>Employee attendance</li>
+    </ul>
+  </div>
+</div>
+
+<h2>10. Conclusion</h2>
+<div class="card">
+  <p>The Restaurant &amp; Food Inventory Database Management System provides an
+  efficient way to manage restaurant operations using a <strong>relational
+  database</strong>. It helps to improve efficiency, reduce manual work, prevent
+  inventory loss, increase productivity and support better business decisions.</p>
+</div>
+
+<h2>Team Members</h2>
+<div class="card">
+  <table>
+    <tr><th>Name</th><th>Student ID</th></tr>
+    <tr><td>Ridwan Islam Nishat</td><td>242-15-942</td></tr>
+    <tr><td>Amir Hamja</td><td>242-15-246</td></tr>
+    <tr><td>Rakibul Hasan</td><td>242-15-934</td></tr>
+    <tr><td>Sadik Billal Khan</td><td>242-15-420</td></tr>
+    <tr><td>Kawsar Rahman Arnob</td><td>242-15-737</td></tr>
+  </table>
+</div>
+
+</main>
+
+<footer>Restaurant &amp; Food Inventory DBMS &mdash; Project Presentation Website</footer>
+
+</body>
+</html>
