@@ -72,13 +72,44 @@ if (($_POST['action'] ?? '') === 'delete') {
     header('Location: inventory.php'); exit;
 }
 
+$search = trim($_GET['search'] ?? '');
+$status = $_GET['status'] ?? 'all';
+
+$where = [];
+$params = [];
+$types = '';
+
+if ($search !== '') {
+    $where[] = "i.name LIKE ?";
+    $params[] = '%' . $search . '%';
+    $types .= 's';
+}
+
+if ($status === 'low') {
+    $where[] = "i.quantity <= i.reorder_level";
+} elseif ($status === 'in_stock') {
+    $where[] = "i.quantity > i.reorder_level";
+}
+
+$where_sql = $where ? 'WHERE ' . implode(' AND ', $where) : '';
+
 $list_sql = "SELECT i.ingredient_id, i.name, i.unit, i.quantity, i.reorder_level,
                     i.unit_price, (i.quantity * i.unit_price) AS stock_value,
                     s.name AS supplier
              FROM ingredients i
              LEFT JOIN suppliers s ON i.supplier_id = s.supplier_id
+             $where_sql
              ORDER BY (i.quantity <= i.reorder_level) DESC, i.name";
-$rows = $conn->query($list_sql);
+
+if ($params) {
+    $stmt = $conn->prepare($list_sql);
+    $stmt->bind_param($types, ...$params);
+    $stmt->execute();
+    $rows = $stmt->get_result();
+} else {
+    $rows = $conn->query($list_sql);
+}
+
 $suppliers = $conn->query("SELECT supplier_id, name FROM suppliers ORDER BY name");
 
 $page_title = 'Inventory (Ingredient Stock)';
@@ -112,6 +143,26 @@ require __DIR__ . '/../header.php';
 <div class="card">
   <h2>Stock list (<?= $rows->num_rows ?>)</h2>
   <p class="hint">Lal row mane stock reorder level er niche neme geche.</p>
+  <form method="get" class="rowform">
+  <label>
+    Search ingredient
+    <input type="text" name="search"
+           value="<?= h($search) ?>"
+           placeholder="e.g. Tomato">
+  </label>
+
+  <label>
+    Stock status
+    <select name="status">
+      <option value="all" <?= $status === 'all' ? 'selected' : '' ?>>All</option>
+      <option value="low" <?= $status === 'low' ? 'selected' : '' ?>>Low Stock</option>
+      <option value="in_stock" <?= $status === 'in_stock' ? 'selected' : '' ?>>In Stock</option>
+    </select>
+  </label>
+
+  <button type="submit">Search</button>
+  <a href="inventory.php">Clear</a>
+</form>
   <table>
     <tr><th>ID</th><th>Name</th><th>Unit</th><th>Stock</th><th>Reorder</th>
         <th>Unit price</th><th>Stock value</th><th>Supplier</th><th colspan="2">Action</th></tr>
